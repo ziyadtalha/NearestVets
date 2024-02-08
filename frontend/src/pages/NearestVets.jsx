@@ -15,7 +15,7 @@ export default function NearestVets()
   const MAP_KEY = import.meta.env.VITE_REACT_MAP_ID;
 
   //location needs to be taken from user instead of hardcoded
-  const location = { lat: 31.582, lng: 74.329 };
+  const [location, setLocation] = useState({ lat: 24.860, lng: 66.990 });
 
   //list of nearby vets; can be moved into redux if needed (unlikely)
   const [veterinary, setVeterinary] = useState([]);
@@ -63,14 +63,33 @@ export default function NearestVets()
     }
 
     fetchData();
-  }, []);
 
+  }, [location]); //new location state is maintained when component is rerendered
+
+  //using built in react method to get live location
+  async function getLiveLocation()
+  {
+    if ("geolocation" in navigator) {
+      await navigator.geolocation.getCurrentPosition(function (position) {
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      });
+    }
+    else
+    {
+      console.log("Geolocation is not available in your browser.");
+    }
+  }
 
   return (
     <div>
       { loading ? ( <p>Loading...</p>) : (
         <div>
           <h1>Nearest Vets:</h1>
+
+          <button onClick={getLiveLocation}>Use Live Location</button>
 
           <APIProvider apiKey={API_KEY}>
             <div style={{height:"80vh"}}>
