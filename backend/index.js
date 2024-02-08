@@ -20,10 +20,10 @@ app.get('/api/nearest_vets', async (req, res) => {
 
     const response = await axios.get(
       //keyword=vet|pet clinic (| = OR operator) instead of type = veterinary_care due to improper tagging IRL
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=10000&keyword=vet|pet clinic&key=${apiKey}`
+      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&keyword=vet|pet clinic&key=${apiKey}`
     );
 
-    console.log(response.data.results);
+    //console.log(response.data.results);
 
     //res.JSON() could be used as well
     res.send(response.data.results);
