@@ -6,8 +6,9 @@ import {
   Map,
   AdvancedMarker,
   Pin,
-  InfoWindow,
+  InfoWindow
 } from "@vis.gl/react-google-maps";
+
 
 export default function NearestVets()
 {
@@ -15,7 +16,7 @@ export default function NearestVets()
   const MAP_KEY = import.meta.env.VITE_REACT_MAP_ID;
 
   //location needs to be taken from user instead of hardcoded
-  const [location, setLocation] = useState({ lat: 24.860, lng: 66.990 });
+  const [location, setLocation] = useState({ lat: 24.860, lng: 66.990, live: false});
 
   //list of nearby vets; can be moved into redux if needed (unlikely)
   const [veterinary, setVeterinary] = useState([]);
@@ -74,6 +75,7 @@ export default function NearestVets()
         setLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          live: true
         });
       });
     }
@@ -115,6 +117,19 @@ export default function NearestVets()
                       </AdvancedMarker>
                   );
                 })
+              }
+
+              {/* Render Blue Marker if user is present: */}
+              {
+                location.live ? (
+                  <AdvancedMarker position={location} >
+                    <Pin
+                      background={"blue"}
+                      borderColor={"dark-blue"}
+                      glyphColor={"white"}
+                    />
+                  </AdvancedMarker>
+                ) : null
               }
 
               </Map>
