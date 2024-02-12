@@ -10,6 +10,7 @@ const NearestVets = () => {
   //List of nearest vets:
   const [veterinary, setVeterinary] = useState([]);
 
+  //User's location attributes:
   const [location, setLocation] = useState({ lat: 24.860, lng: 66.990, live: false, errorRange: 1000});
 
   //Opening and Closing of InfoBoxes on Markers:
@@ -46,7 +47,21 @@ const NearestVets = () => {
         );
 
         const data = response.data;
-        setVeterinary(data);
+
+        //adding GoogleMaps link to each Vet object along with place photo, since this does not come from the API
+        const updatedData = data.map((vet) => {
+          const link = "https://www.google.com/maps/search/?api=1&query=Google&query_place_id=" + vet.place_id;
+
+          //only add Photo if exists
+          if (vet.photos && vet.photos.length > 0) {
+            const photo = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${vet.photos[0].photo_reference}&key=${API_KEY}`;
+            return {...vet, link, photo};
+          }
+
+          return {...vet, link};
+        })
+
+        setVeterinary(updatedData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching nearby Vets:', error);
@@ -95,14 +110,26 @@ const NearestVets = () => {
                     onCloseClick={handleInfoBoxClose}
                   >
                     <div>
-                      <h4>{vet.name}</h4>
+                      <h3>{vet.name}</h3>
+
+                      {vet.photo && (
+                        <img src={vet.photo} alt={`Vet ${selectedMarker.index + 1}`} style={{ maxWidth: '50%' }} />
+                      )}
+
+                      <p>{vet.vicinity}</p>
+                      <p>{vet.contact}</p>
+
                       {vet.open_now ? <p>Open</p> : <p>Closed</p>}
+
+                      <a href={vet.link}>View on GoogleMaps</a>
                     </div>
+
                   </InfoWindow>
                 )}
               </Marker>
             ))}
 
+            {/* Display user location blue circle marker and translucent error range circle around it */}
             {location.live && (
               <>
               <Marker
