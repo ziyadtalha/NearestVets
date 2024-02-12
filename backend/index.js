@@ -16,17 +16,16 @@ app.get('/api/nearest_vets', async (req, res) => {
     //importing key from .env file
     const apiKey = process.env.API_KEY;
 
-    const { lat, lng } = req.query;
+    const { lat, lng, radius } = req.query;
 
     const response = await axios.get(
       //keyword=vet|pet clinic (| = OR operator) instead of type = veterinary_care due to improper tagging IRL
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&keyword=vet|pet clinic&key=${apiKey}`
+      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&keyword=vet|pet clinic&key=${apiKey}`
     );
 
-    //console.log(response.data.results);
+    const data = response.data.results;
 
-    //res.JSON() could be used as well
-    res.send(response.data.results);
+    res.send(data);
   }
   catch (error)
   {
@@ -35,6 +34,6 @@ app.get('/api/nearest_vets', async (req, res) => {
   }
 });
 
-app.listen(3001, () => {
-  console.log(`Server is running on http://localhost:3001`);
+app.listen(5000, () => {
+  console.log(`Server is running on http://localhost:5000`);
 });
