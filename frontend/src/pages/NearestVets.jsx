@@ -13,6 +13,7 @@ import {
   Box,
   FormControlLabel,
   Button,
+  ButtonGroup,
   Grid,
   Typography,
   useTheme,
@@ -56,10 +57,14 @@ const NearestVets = () => {
   };
 
 
-  //Manual Location by City form:
+  //This state is used on the button group to show the clicked option form:
+  const [activeButton, setActive] = useState("MANUAL");
+
+
+  //Input parameters for location:
   const [formData, setFormData] = useState({
-    city: '',
-    radiusKMs: 1,
+    city: '', //this is used by manual location form
+    radiusKMs: 1, //this is used by live location option
   });
 
   const handleInputChange = (e) => {
@@ -84,8 +89,8 @@ const NearestVets = () => {
           live: false,
           errorRange: 1000,
 
-          //converting radius from kilometres to metres:
-          radiusMs: (formData.radiusKMs * 1000)
+          //for the manual option, this is hardcoded
+          radiusMs: 20000
         });
       }
     })
@@ -152,6 +157,7 @@ const NearestVets = () => {
 
   return (
     <div>
+
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -163,8 +169,27 @@ const NearestVets = () => {
           </Grid>
 
           <Grid container spacing={2} >
-            <Grid item xs={8} >
-                <form  onSubmit={onFormSubmit} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+
+            <Grid item xs={12} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              <ButtonGroup>
+                <Button
+                onClick={() => setActive("MANUAL")}
+                sx={{ backgroundColor: activeButton === 'MANUAL' ? 'primary.light' : 'primary.main', color: 'white', borderRadius: '9px',
+                '&:hover': {backgroundColor: 'primary.dark' } }}>
+                  MANUAL
+                </Button>
+
+                <Button onClick={() => setActive("LIVE")}
+                  sx={{ backgroundColor: activeButton === 'LIVE' ? 'primary.light' : 'primary.main', color: 'white', borderRadius: '9px',
+                  '&:hover': {backgroundColor: 'primary.dark' } }}>
+                  LIVE
+                </Button>
+              </ButtonGroup>
+            </Grid>
+
+            <Grid item xs={12} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }} >
+                {activeButton === 'MANUAL' ? (
+                  <form onSubmit={onFormSubmit} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                     <FormControl
                       variant={muiVariant}
                       fullWidth={isSmallScreen}
@@ -184,48 +209,61 @@ const NearestVets = () => {
                       </Select>
                     </FormControl>
 
-                    <Box sx={{width: 300}}>
-                    <FormControl sx={{display: 'flex', flexDirection: 'row' }}>
-                      <FormControlLabel
-                        value='Slider'
-                        sx={{ flexGrow: 1 }}
-                        control={
-                          <Slider
-                            valueLabelDisplay='auto'
-                            sx={{ mx: 3 }}
-                            value={formData.radiusKMs}
-                            onChange={handleInputChange}
-                            max={10}
-                            min={1}
-                            name='radiusKMs'
-                          />
-                        }
-                        label='Distance:'
-                        labelPlacement='start'
-                      />
-                    </FormControl>
-                    </Box>
+                    &nbsp;
+                    &nbsp;
 
                     <Button variant='contained' color='primary' style={{width:'200px'}} type='submit'>
                       <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Search</Typography>
                     </Button>
-                </form>
+                  </form>
+                ) : (
+
+                  <>
+                  <Box sx={{width: 300}}>
+                  <FormControl sx={{display: 'flex', flexDirection: 'row' }}>
+                    <FormControlLabel
+                      value='Slider'
+                      sx={{ flexGrow: 1 }}
+                      control={
+                        <Slider
+                          valueLabelDisplay='auto'
+                          sx={{ mx: 3 }}
+                          value={formData.radiusKMs}
+                          onChange={handleInputChange}
+                          max={10}
+                          min={1}
+                          name='radiusKMs'
+                        />
+                      }
+                      label='Distance:'
+                      labelPlacement='start'
+                    />
+                  </FormControl>
+                  </Box>
+
+                  <Button variant='contained' color='primary' style={{width:'200px'}}
+                    startIcon={<NearMeIcon style={{fontSize: '2rem', color: 'white' }} />}
+                    onClick={getLiveLocation}
+                  >
+                    <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Live</Typography>
+                  </Button>
+                  </>
+                )}
             </Grid>
             <Grid item xs={4}>
-              <Button variant='contained' color='primary' style={{width:'200px'}}
-                  startIcon={<NearMeIcon style={{fontSize: '2rem', color: 'white' }} />}
-                  onClick={getLiveLocation}
-                >
-                  <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Live</Typography>
-                </Button>
+
+
+
+
             </Grid>
           </Grid>
 
           <GoogleMap
             zoom={12}
             center={location}
-            mapContainerStyle={{ height: '80vh' }}
+            mapContainerStyle={{ height: '80vh', maxHeight: '600px' }} // Adjust maxHeight to your preference
           >
+
             {veterinary.map((vet) => (
               <Marker
                 key={vet.place_id}
