@@ -3,6 +3,7 @@ import { GoogleMap, useLoadScript, Marker, InfoWindow, Circle } from '@react-goo
 import axios from 'axios';
 
 import NearMeIcon from '@mui/icons-material/NearMe';
+import LocationCityIcon from '@mui/icons-material/LocationCity';
 
 import {
   FormControl,
@@ -21,7 +22,8 @@ import {
   Paper,
   Container,
   FormGroup,
-  Checkbox
+  Checkbox,
+  Rating
 } from '@mui/material';
 
 
@@ -206,13 +208,13 @@ const NearestVets = () => {
                       <Button
                       onClick={() => setActive("MANUAL")}
                       sx={{ backgroundColor: activeButton === 'MANUAL' ? 'primary.light' : 'primary.main', color: 'white', fontSize: isMoreSmallerScreen2 ? 10 : isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
-                      '&:hover': {backgroundColor: 'primary.dark' } }}>
+                      '&:hover': {backgroundColor: 'primary.dark'} }}>
                         CITY
                       </Button>
 
                       <Button onClick={() => setActive("LIVE")}
-                        sx={{ backgroundColor: activeButton === 'LIVE' ? 'primary.light' : 'primary.main', color: 'white',  fontSize: isMoreSmallerScreen2 ? 10 : isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
-                        '&:hover': {backgroundColor: 'primary.dark' } }}>
+                        sx={{ backgroundColor: activeButton === 'LIVE' ? 'primary.light' : 'primary.main', color: 'white', fontSize: isMoreSmallerScreen2 ? 10 : isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
+                        '&:hover': {backgroundColor: 'primary.dark'} }}>
                         LIVE
                       </Button>
                     </ButtonGroup>
@@ -245,7 +247,8 @@ const NearestVets = () => {
                           &nbsp;
                           &nbsp;
 
-                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '250px'), minWidth: (isLargeScreen ? '200px' : '150px')}} type='submit'>
+                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '250px'), minWidth: (isLargeScreen ? '200px' : '150px')}} type='submit'
+                            startIcon={<LocationCityIcon style={{fontSize: '2rem', color: 'white' }} />} >
                             <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Submit</Typography>
                           </Button>
                         </form>
@@ -320,7 +323,7 @@ const NearestVets = () => {
 
                 {veterinary.map((vet) => (
                   //don't render marker if the Open Only option is true and the Vet is closed
-                  (formData.open == true && !vet.open_now) ? console.log('did not render') :
+                  (formData.open == true && vet.opening_hours.open_now == false) ? console.log('did not render') :
                     <Marker
                       key={vet.place_id}
                       position={vet.geometry.location}
@@ -338,10 +341,15 @@ const NearestVets = () => {
                               <img src={vet.photo} alt={`Vet ${selectedMarker.index + 1}`} style={{ maxWidth: '300px', height: '100px' }} />
                             )}
 
+                            <p>
+                              <Rating name='vetRating' value={vet.rating} readOnly precision={0.1} getLabel />
+                              <Box>{vet.user_ratings_total} Reviews</Box>
+                            </p>
+
                             <p>{vet.vicinity}</p>
                             <p>{vet.contact}</p>
 
-                            {vet.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>}
+                            {vet.opening_hours.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>}
 
                             <a href={vet.link}>View on GoogleMaps</a>
                           </div>
