@@ -26,6 +26,9 @@ import {
   Rating
 } from '@mui/material';
 
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const NearestVets = () => {
 
@@ -43,6 +46,20 @@ const NearestVets = () => {
   var muiVariant = (!isSmallScreen ? 'outlined' : 'standard');
 
 
+  const notify = (errorMsg) => {
+    toast.error(errorMsg, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: false,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+    });
+  };
+
+
   const API_KEY = import.meta.env.VITE_REACT_API_KEY;
 
 
@@ -53,6 +70,14 @@ const NearestVets = () => {
   const [location, setLocation] = useState({ lat: 24.860, lng: 66.990, live: false, errorRange: 1000, radiusMs: 10000});
 
   const getLiveLocation = async () => {
+
+    const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+
+    if (permissionStatus.state === 'denied') {
+      notify('Geolocation not accessible!');
+      return;
+    }
+
     if ('geolocation' in navigator) {
       await navigator.geolocation.getCurrentPosition(function (position) {
         setLocation({
@@ -64,8 +89,11 @@ const NearestVets = () => {
         });
       });
 
-    } else {
+    }
+    else
+    {
       console.log('Geolocation is not available in your browser.');
+      notify('Geolocation not accessible!');
     }
   };
 
@@ -93,11 +121,28 @@ const NearestVets = () => {
     });
   };
 
-  //Key value pairs of cities and their coordinated
-  const cities = [{name: "Karachi", lat: 24.860, lng: 66.990}, {name: "Lahore", lat: 31.520, lng: 74.358}];
+  //Key value pairs of cities and their coordinates
+  const cities = [
+    { name: "Karachi", lat: 24.860, lng: 66.990 },
+    { name: "Lahore", lat: 31.520, lng: 74.358 },
+    { name: "Islamabad", lat: 33.6844, lng: 73.0479 },
+    { name: "Rawalpindi", lat: 33.5651, lng: 73.0169 },
+    { name: "Faisalabad", lat: 31.5497, lng: 73.0132 },
+    { name: "Multan", lat: 30.1798, lng: 71.4246 },
+    { name: "Peshawar", lat: 34.0151, lng: 71.5249 },
+    { name: "Quetta", lat: 30.1798, lng: 66.9750 },
+    { name: "Sialkot", lat: 32.4945, lng: 74.5222 },
+    { name: "Gujranwala", lat: 32.1636, lng: 74.1884 },
+    { name: "Sargodha", lat: 32.0836, lng: 72.6741 },
+  ];
 
   const onFormSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.city === "") {
+      notify('City must be selected!');
+      return false;
+    }
 
     cities.forEach((city) => {
       if (city.name == formData.city) {
@@ -142,11 +187,18 @@ const NearestVets = () => {
 
         const data = response.data;
 
-        console.log(data);
+        if (data.length === 0) {
+          notify('No nearby vets found within the specified radius. Try increasing the distance.');
+          setLoading(false);
+          return;
+        }
+
 
         //adding GoogleMaps link to each Vet object along with place photo, since this does not come from the API
         const updatedData = data.map((vet) => {
           const link = 'https://www.google.com/maps/search/?api=1&query=Google&query_place_id=' + vet.place_id;
+
+          console.log(vet.name);
 
           //only add Photo if exists
           if (vet.photos && vet.photos.length > 0) {
@@ -161,6 +213,7 @@ const NearestVets = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching nearby Vets:', error);
+        notify('Could not fetch Vets!');
         setLoading(false);
       }
     };
@@ -205,7 +258,7 @@ const NearestVets = () => {
                 <Paper elevation={12} sx={{ height: "auto", borderRadius: '20px', padding: 2, mb: 2, pt: 0,  maxWidth: 'auto', minWidth: '200px'}}>
                   <Container style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
                     <ButtonGroup>
-                      <Button
+                    <Button
                       onClick={() => setActive("MANUAL")}
                       sx={{ backgroundColor: activeButton === 'MANUAL' ? 'primary.light' : 'primary.main', color: 'white', fontSize: isMoreSmallerScreen2 ? 10 : isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
                       '&:hover': {backgroundColor: 'primary.dark'} }}>
@@ -221,7 +274,6 @@ const NearestVets = () => {
                   </Container>
 
                   <Container sx={{pt: 2}}>
-
                       {activeButton === 'MANUAL' ? (
                         <form onSubmit={onFormSubmit} style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'center'}}>
                           <Box sx={{minWidth: (!isSmallScreen ? '300px' : '150px'), maxWidth: (!isSmallScreen ? 'auto' : '700px')}}>
@@ -232,14 +284,19 @@ const NearestVets = () => {
                             >
                               <InputLabel id='city-label'>City:</InputLabel>
                               <Select
-                                labelId='city-label'
                                 id='city'
                                 name='city'
                                 onChange={handleInputChange}
                                 value={formData.city}
+                                options={cities}
                               >
-                                <MenuItem value={'Karachi'}>Karachi</MenuItem>
-                                <MenuItem value={'Lahore'}>Lahore</MenuItem>
+                                {
+                                  cities.map((city) => {
+                                    return (
+                                      <MenuItem key={city.name} value={city.name}>{city.name}</MenuItem>
+                                    )
+                                  })
+                                }
                               </Select>
                             </FormControl>
                           </Box>
@@ -254,8 +311,9 @@ const NearestVets = () => {
                         </form>
                       ) : (
 
-                        <Container style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'center',  margin: 'auto' }}>
-                          <Box sx={{minWidth: isSmallScreen ? 200 : 300}}>
+                        <Container style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'center', margin: 'auto'}}>
+
+                          <Box sx={{mt: 2, mb: 1, minWidth: isSmallScreen ? 200 : 300}}>
                             <FormControl sx={{display: 'flex', flexDirection: 'row' }}>
                               <FormControlLabel
                                 value='Slider'
@@ -275,27 +333,33 @@ const NearestVets = () => {
                                 labelPlacement='start'
                               />
                             </FormControl>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', ml: 12 }}>
+                              <Typography variant="body2">
+                                0 km
+                              </Typography>
+                              <Typography variant="body2">
+                                10 km
+                              </Typography>
+                            </Box>
                           </Box>
 
-                          &nbsp;
-                          &nbsp;
+                          {!isHugeScreen ? <>&nbsp; &nbsp;</> : null}
 
                           <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '250px'), minWidth: (isLargeScreen ? '200px' : '150px')}}
                             startIcon={<NearMeIcon style={{fontSize: '2rem', color: 'white' }} />}
                             onClick={getLiveLocation}
                           >
-                            <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Live</Typography>
+                            <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>SUBMIT</Typography>
                           </Button>
                         </Container>
                       )}
 
                   </Container>
 
-                  <Container style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', pt: 2}}>
+                  <Container style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 100}}>
                     <FormGroup sx={{pb: 0}}>
                       <FormControlLabel control={
                         <Checkbox
-                          labelId='open-label'
                           checked={formData.open}
                           onChange={handleCheckboxChange}
                           name='open'
@@ -323,7 +387,7 @@ const NearestVets = () => {
 
                 {veterinary.map((vet) => (
                   //don't render marker if the Open Only option is true and the Vet is closed
-                  (formData.open == true && vet.opening_hours.open_now == false) ? console.log('did not render') :
+                  (formData.open == true && (vet.opening_hours ? !vet.opening_hours.open_now : null)) ? console.log('did not render') :
                     <Marker
                       key={vet.place_id}
                       position={vet.geometry.location}
@@ -342,14 +406,14 @@ const NearestVets = () => {
                             )}
 
                             <p>
-                              <Rating name='vetRating' value={vet.rating} readOnly precision={0.1} getLabel />
+                              <Rating name='vetRating' value={vet.rating} readOnly precision={0.1} />
                               <Box>{vet.user_ratings_total} Reviews</Box>
                             </p>
 
                             <p>{vet.vicinity}</p>
                             <p>{vet.contact}</p>
 
-                            {vet.opening_hours.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>}
+                            {vet.opening_hours ? (vet.opening_hours.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>) : null}
 
                             <a href={vet.link}>View on GoogleMaps</a>
                           </div>
@@ -394,6 +458,7 @@ const NearestVets = () => {
             <Grid item xs={(!isLargeScreen ? 2 : 1)}></Grid>
           </Grid>
 
+          <ToastContainer />
         </div>
       )}
     </div>
