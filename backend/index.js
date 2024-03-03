@@ -1,39 +1,66 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-
-const app = express();
-
-//to process API requests; they are blocked without CORS
-app.use(cors());
-
-//for using .env file
-const dotenv = require('dotenv');
-dotenv.config();
-
 app.get('/api/nearest_vets', async (req, res) => {
   try {
-    //importing key from .env file
     const apiKey = process.env.API_KEY;
+    const { lat, lng, service, radius } = req.query;
 
-    const { lat, lng, radius } = req.query;
+    let searchTerm = '';
 
-    const response = await axios.get(
-      //keyword=vet|pet clinic (| = OR operator) instead of type = veterinary_care due to improper tagging IRL
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&keyword=vet|pet clinic&key=${apiKey}`
-    );
+    if (service == 'All') {
+      searchTerm = 'pet|vet|pet clinic|pet shop|pet store|pet shop|pet store';
+    } else if (service == 'Veterinary') {
+      searchTerm = 'vet|pet clinic';
+    } else if (service == 'Pet Store') {
+      searchTerm = 'pet shop|pet store';
+    } else if (service == 'Pet Grooming') {
+      searchTerm = 'pet shop|pet store';
+    }
 
-    const data = response.data.results;
+    console.log(lat, lng, radius, service);
 
-    res.send(data);
-  }
-  catch (error)
-  {
+    const baseEndpoint = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+    const params = new URLSearchParams({
+      location: `${lat},${lng}`,
+      radius: radius,
+      keyword: searchTerm,
+      key: apiKey,
+    });
+
+    const response = await axios.get(`${baseEndpoint}?${params}`);
+    const results = response.data.results;
+
+    // Filter out duplicates based on place_id
+    const uniqueResults = Array.from(new Set(results.map(place => place.place_id)))
+      .map(placeId => results.find(place => place.place_id === placeId));
+
+    // Check for next_page_token
+    let nextPageToken = response.data.next_page_token;
+
+    // If there is a next_page_token, make a second request
+    if (nextPageToken) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Add a delay before the next request
+
+      const secondParams = new URLSearchParams({
+        location: `${lat},${lng}`,
+        radius: radius,
+        keyword: searchTerm,
+        key: apiKey,
+        pagetoken: nextPageToken,
+      });
+
+      const secondResponse = await axios.get(`${baseEndpoint}?${secondParams}`);
+      const secondResults = secondResponse.data.results;
+
+      // Filter out duplicates based on place_id
+      const uniqueSecondResults = Array.from(new Set(secondResults.map(place => place.place_id)))
+        .map(placeId => secondResults.find(place => place.place_id === placeId));
+
+      uniqueResults.push(...uniqueSecondResults);
+    }
+
+    console.log(uniqueResults.length);
+    res.send(uniqueResults);
+  } catch (error) {
     console.error('Error fetching nearby vets:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-});
-
-app.listen(5000, () => {
-  console.log(`Server is running on http://localhost:5000`);
 });

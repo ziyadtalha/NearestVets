@@ -106,6 +106,7 @@ const NearestVets = () => {
   const [formData, setFormData] = useState({
     city: '', //this is used by manual location form
     radiusKMs: 1, //this is used by live location option
+    service: 'All',
     open: true
   });
 
@@ -120,6 +121,8 @@ const NearestVets = () => {
       [e.target.name]: e.target.checked,
     });
   };
+
+  const services = ['All', 'Veterinary', 'Pet Store', 'Pet Grooming'];
 
   //Key value pairs of cities and their coordinates
   const cities = [
@@ -141,6 +144,11 @@ const NearestVets = () => {
 
     if (formData.city === "") {
       notify('City must be selected!');
+      return false;
+    }
+
+    if (formData.service === "") {
+      notify('Service must be selected!');
       return false;
     }
 
@@ -178,11 +186,18 @@ const NearestVets = () => {
   //List of nearest vets:
   const [veterinary, setVeterinary] = useState([]);
 
+  function removeDuplicates(arr)
+  {
+    //removing duplicate places:
+    const ids = arr.map(({ place_id }) => place_id);
+    return arr.filter(({ place_id }, index) => !ids.includes(place_id, index + 1));
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/nearest_vets?lat=${location.lat}&lng=${location.lng}&radius=${location.radiusMs}`
+          `http://localhost:5000/api/nearest_vets?lat=${location.lat}&lng=${location.lng}&service=${formData.service}&radius=${location.radiusMs}`
         );
 
         const data = response.data;
@@ -193,9 +208,10 @@ const NearestVets = () => {
           return;
         }
 
+        console.log(data.length);
 
         //adding GoogleMaps link to each Vet object along with place photo, since this does not come from the API
-        const updatedData = data.map((vet) => {
+        const updatedPlaces = data.map((vet) => {
           const link = 'https://www.google.com/maps/search/?api=1&query=Google&query_place_id=' + vet.place_id;
 
           console.log(vet.name);
@@ -209,7 +225,7 @@ const NearestVets = () => {
           return {...vet, link};
         })
 
-        setVeterinary(updatedData);
+        setVeterinary(updatedPlaces);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching nearby Vets:', error);
@@ -235,7 +251,6 @@ const NearestVets = () => {
 
   return (
     <div>
-
       {loading ? (
         <h1>Loading...</h1>
       ) : (
@@ -273,9 +288,50 @@ const NearestVets = () => {
                     </ButtonGroup>
                   </Container>
 
-                  <Container sx={{pt: 2}}>
+                  <Container style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'space-between', marginTop: 10}}>
+                    <Box sx={{minWidth: (!isSmallScreen ? '300px' : '150px'), maxWidth: (!isSmallScreen ? 'auto' : '700px')}}>
+                      <FormControl
+                        variant={muiVariant}
+                        fullWidth={true}
+                        margin='dense'
+                      >
+                        <InputLabel id='service-label'>Service:</InputLabel>
+                        <Select
+                          id='service'
+                          name='service'
+                          onChange={handleInputChange}
+                          value={formData.service}
+                          options={services}
+                        >
+                          {
+                            services.map((service) => {
+                              return (
+                                <MenuItem key={service} value={service}>{service}</MenuItem>
+                              )
+                            })
+                          }
+                        </Select>
+                      </FormControl>
+                    </Box>
+
+                    <Box>
+                      <FormGroup>
+                        <FormControlLabel control={
+                          <Checkbox
+                            checked={formData.open}
+                            onChange={handleCheckboxChange}
+                            name='open'
+                          />
+                        }
+                          label="Currently Open"
+                        />
+                      </FormGroup>
+                    </Box>
+                  </Container>
+
+                  <Container style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 5}}>
                       {activeButton === 'MANUAL' ? (
-                        <form onSubmit={onFormSubmit} style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'center'}}>
+                        <form onSubmit={onFormSubmit} style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'space-between'}}>
                           <Box sx={{minWidth: (!isSmallScreen ? '300px' : '150px'), maxWidth: (!isSmallScreen ? 'auto' : '700px')}}>
                             <FormControl
                               variant={muiVariant}
@@ -301,19 +357,18 @@ const NearestVets = () => {
                             </FormControl>
                           </Box>
 
-                          &nbsp;
-                          &nbsp;
+                          {!isHugeScreen ? <>&nbsp; &nbsp;</> : null}
 
-                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '250px'), minWidth: (isLargeScreen ? '200px' : '150px')}} type='submit'
-                            startIcon={<LocationCityIcon style={{fontSize: '2rem', color: 'white' }} />} >
-                            <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Submit</Typography>
-                          </Button>
+                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '200px'), minWidth: (isLargeScreen ? '200px' : '150px'), marginTop: 5}} type='submit'
+                              startIcon={<LocationCityIcon style={{fontSize: '2rem', color: 'white' }} />} >
+                              <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Submit</Typography>
+                            </Button>
                         </form>
                       ) : (
 
-                        <Container style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'center', margin: 'auto'}}>
+                        <Container style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'space-between', margin: 'auto'}}>
 
-                          <Box sx={{mt: 2, mb: 1, minWidth: isSmallScreen ? 200 : 300}}>
+                          <Box sx={{ minWidth: isSmallScreen ? 200 : 250}}>
                             <FormControl sx={{display: 'flex', flexDirection: 'row' }}>
                               <FormControlLabel
                                 value='Slider'
@@ -321,7 +376,7 @@ const NearestVets = () => {
                                 control={
                                   <Slider
                                     valueLabelDisplay='auto'
-                                    sx={{ mx: 3 }}
+                                    sx={{ mx: 2 }}
                                     value={formData.radiusKMs}
                                     onChange={handleInputChange}
                                     max={10}
@@ -345,7 +400,7 @@ const NearestVets = () => {
 
                           {!isHugeScreen ? <>&nbsp; &nbsp;</> : null}
 
-                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '250px'), minWidth: (isLargeScreen ? '200px' : '150px')}}
+                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '200px'), minWidth: (isLargeScreen ? '200px' : '150px')}}
                             startIcon={<NearMeIcon style={{fontSize: '2rem', color: 'white' }} />}
                             onClick={getLiveLocation}
                           >
@@ -356,19 +411,6 @@ const NearestVets = () => {
 
                   </Container>
 
-                  <Container style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 100}}>
-                    <FormGroup sx={{pb: 0}}>
-                      <FormControlLabel control={
-                        <Checkbox
-                          checked={formData.open}
-                          onChange={handleCheckboxChange}
-                          name='open'
-                        />
-                      }
-                        label="Show Currently Open"
-                      />
-                    </FormGroup>
-                  </Container>
                 </Paper>
               </Grid>
 
