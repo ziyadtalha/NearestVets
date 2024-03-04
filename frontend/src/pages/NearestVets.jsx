@@ -5,6 +5,7 @@ import axios from 'axios';
 import NearMeIcon from '@mui/icons-material/NearMe';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
 
+
 import {
   FormControl,
   InputLabel,
@@ -154,7 +155,7 @@ const NearestVets = () => {
 
     cities.forEach((city) => {
       if (city.name == formData.city) {
-        //as soon as the Location state is updated, useEffect will be triggered, thus updating list of vets
+        //as soon as the Location state is updated, useEffect will be triggered, thus updating list of Places
         setLocation({
           lat: city.lat,
           lng: city.lng,
@@ -174,8 +175,8 @@ const NearestVets = () => {
 
   //Opening and Closing of InfoBoxes on Markers:
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const handleMarkerClick = (vet) => {
-    setSelectedMarker(vet);
+  const handleMarkerClick = (place) => {
+    setSelectedMarker(place);
   };
   const handleInfoBoxClose = () => {
     setSelectedMarker(null);
@@ -183,15 +184,8 @@ const NearestVets = () => {
 
 
 
-  //List of nearest vets:
-  const [veterinary, setVeterinary] = useState([]);
-
-  function removeDuplicates(arr)
-  {
-    //removing duplicate places:
-    const ids = arr.map(({ place_id }) => place_id);
-    return arr.filter(({ place_id }, index) => !ids.includes(place_id, index + 1));
-  }
+  //List of nearest places:
+  const [places, setPlaces] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -203,33 +197,19 @@ const NearestVets = () => {
         const data = response.data;
 
         if (data.length === 0) {
-          notify('No nearby vets found within the specified radius. Try increasing the distance.');
+          notify('No nearby Places found within the specified radius. Try increasing the distance.');
           setLoading(false);
           return;
         }
 
-        console.log(data.length);
+        console.log(data[0]);
 
-        //adding GoogleMaps link to each Vet object along with place photo, since this does not come from the API
-        const updatedPlaces = data.map((vet) => {
-          const link = 'https://www.google.com/maps/search/?api=1&query=Google&query_place_id=' + vet.place_id;
+        setPlaces(data);
 
-          console.log(vet.name);
-
-          //only add Photo if exists
-          if (vet.photos && vet.photos.length > 0) {
-            const photo = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${vet.photos[0].photo_reference}&key=${API_KEY}`;
-            return {...vet, link, photo};
-          }
-
-          return {...vet, link};
-        })
-
-        setVeterinary(updatedPlaces);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching nearby Vets:', error);
-        notify('Could not fetch Vets!');
+        console.error('Error fetching nearby Places:', error);
+        notify('Could not fetch Places!');
         setLoading(false);
       }
     };
@@ -250,7 +230,7 @@ const NearestVets = () => {
   if (!isLoaded) return <h1>Loading maps</h1>;
 
   return (
-    <div>
+    <>
       {loading ? (
         <h1>Loading...</h1>
       ) : (
@@ -427,37 +407,41 @@ const NearestVets = () => {
                 mapContainerStyle={{ height: '80vh', maxHeight: !isMoreSmallerScreen2 ? '600px' : '300px' }} // Adjust maxHeight to your preference
               >
 
-                {veterinary.map((vet) => (
-                  //don't render marker if the Open Only option is true and the Vet is closed
-                  (formData.open == true && (vet.opening_hours ? !vet.opening_hours.open_now : null)) ? console.log('did not render') :
+                {places.map((place) => (
+                  //don't render marker if the Open Only option is true and the Place is closed
+                  (formData.open == true && (place.opening_hours ? !place.opening_hours.open_now : null)) ? console.log('did not render') :
                     <Marker
-                      key={vet.place_id}
-                      position={vet.geometry.location}
-                      onClick={() => handleMarkerClick(vet)}
+                      key={place.place_id}
+                      position={place.geometry.location}
+                      onClick={() => handleMarkerClick(place)}
                     >
-                      {selectedMarker === vet && (
+                      {selectedMarker === place && (
                         <InfoWindow
-                          position={vet.geometry.location}
+                          position={place.geometry.location}
                           onCloseClick={handleInfoBoxClose}
                         >
                           <div style={{maxWidth: '300px'}}>
-                            <h2>{vet.name}</h2>
 
-                            {vet.photo && (
-                              <img src={vet.photo} alt={`Vet ${selectedMarker.index + 1}`} style={{ maxWidth: '300px', height: '100px' }} />
+                            {place.photo && (
+                              <img src={place.photo} alt={`Place ${selectedMarker.index + 1}`} style={{ width: '250px', height: '100px' }} />
                             )}
 
+                            <h2>{place.name}</h2>
+
+                            <hr />
+
                             <p>
-                              <Rating name='vetRating' value={vet.rating} readOnly precision={0.1} />
-                              <Box>{vet.user_ratings_total} Reviews</Box>
+                              <Rating name='placeRating' size="small" value={place.rating} readOnly precision={0.1} />
+                              <Box>{place.user_ratings_total} Reviews</Box>
                             </p>
 
-                            <p>{vet.vicinity}</p>
-                            <p>{vet.contact}</p>
+                            <p>{place.vicinity}</p>
 
-                            {vet.opening_hours ? (vet.opening_hours.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>) : null}
+                            {place.opening_hours ? (place.opening_hours.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>) : null}
 
-                            <a href={vet.link}>View on GoogleMaps</a>
+                            <p>{place.international_phone_number}</p>
+
+                            <a href={place.placeLink}>View on GoogleMaps</a>
                           </div>
 
                         </InfoWindow>
@@ -503,7 +487,7 @@ const NearestVets = () => {
           <ToastContainer />
         </div>
       )}
-    </div>
+    </>
   );
 };
 

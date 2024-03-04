@@ -1,3 +1,17 @@
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+
+const app = express();
+
+//to process API requests; they are blocked without CORS
+app.use(cors());
+
+//for using .env file
+const dotenv = require('dotenv');
+dotenv.config();
+
+
 app.get('/api/nearest_vets', async (req, res) => {
   try {
     const apiKey = process.env.API_KEY;
@@ -7,11 +21,14 @@ app.get('/api/nearest_vets', async (req, res) => {
 
     if (service == 'All') {
       searchTerm = 'pet|vet|pet clinic|pet shop|pet store|pet shop|pet store';
-    } else if (service == 'Veterinary') {
+    }
+    else if (service == 'Veterinary') {
       searchTerm = 'vet|pet clinic';
-    } else if (service == 'Pet Store') {
+    }
+    else if (service == 'Pet Store') {
       searchTerm = 'pet shop|pet store';
-    } else if (service == 'Pet Grooming') {
+    }
+    else if (service == 'Pet Grooming') {
       searchTerm = 'pet shop|pet store';
     }
 
@@ -28,18 +45,14 @@ app.get('/api/nearest_vets', async (req, res) => {
     const response = await axios.get(`${baseEndpoint}?${params}`);
     const results = response.data.results;
 
-    // Filter out duplicates based on place_id
-    const uniqueResults = Array.from(new Set(results.map(place => place.place_id)))
-      .map(placeId => results.find(place => place.place_id === placeId));
 
     // Check for next_page_token
     let nextPageToken = response.data.next_page_token;
 
-    // If there is a next_page_token, make a second request
-    if (nextPageToken) {
+    for (let i = 0; i < 2 && nextPageToken; i++) {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Add a delay before the next request
 
-      const secondParams = new URLSearchParams({
+      const pageParams = new URLSearchParams({
         location: `${lat},${lng}`,
         radius: radius,
         keyword: searchTerm,
@@ -47,20 +60,41 @@ app.get('/api/nearest_vets', async (req, res) => {
         pagetoken: nextPageToken,
       });
 
-      const secondResponse = await axios.get(`${baseEndpoint}?${secondParams}`);
-      const secondResults = secondResponse.data.results;
+      const pageResponse = await axios.get(`${baseEndpoint}?${pageParams}`);
+      const pageResults = pageResponse.data.results;
 
-      // Filter out duplicates based on place_id
-      const uniqueSecondResults = Array.from(new Set(secondResults.map(place => place.place_id)))
-        .map(placeId => secondResults.find(place => place.place_id === placeId));
+      results.push(...pageResults);
 
-      uniqueResults.push(...uniqueSecondResults);
+      // Update nextPageToken for the next iteration
+      nextPageToken = pageResponse.data.next_page_token;
     }
 
-    console.log(uniqueResults.length);
-    res.send(uniqueResults);
-  } catch (error) {
+
+    //adding GoogleMaps link to each place object along with place photo as an object, since this does not come from the API
+    const maplink = 'https://www.google.com/maps/search/?api=1&query=Google&query_place_id='
+
+    const updatedPlaces = results.map((place) => {
+      const placeLink = maplink + place.place_id;
+
+      //only add Photo if exists
+      if (place.photos && place.photos.length > 0) {
+        const photo = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`;
+        return {...place, placeLink, photo};
+      }
+
+      return {...place, placeLink};
+    })
+
+    console.log(updatedPlaces.length);
+    res.send(updatedPlaces);
+  }
+  catch (error)
+  {
     console.error('Error fetching nearby vets:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
+});
+
+app.listen(5000, () => {
+  console.log(`Server is running on http://localhost:5000`);
 });
