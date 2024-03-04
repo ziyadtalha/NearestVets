@@ -4,7 +4,7 @@ import axios from 'axios';
 
 import NearMeIcon from '@mui/icons-material/NearMe';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
-
+import PetsIcon from '@mui/icons-material/Pets';
 
 import {
   FormControl,
@@ -24,7 +24,9 @@ import {
   Container,
   FormGroup,
   Checkbox,
-  Rating
+  Rating,
+  Divider,
+  Skeleton
 } from '@mui/material';
 
 import { ToastContainer, toast } from 'react-toastify';
@@ -65,6 +67,7 @@ const NearestVets = () => {
 
 
   const [loading, setLoading] = useState(true);
+  const [resultsLoading, setResultsLoading] = useState(true);
 
 
   //User's location attributes:
@@ -88,6 +91,8 @@ const NearestVets = () => {
           errorRange: position.coords.accuracy,
           radiusMs: (formData.radiusKMs * 1000)
         });
+
+        setResultsLoading(true);
       });
 
     }
@@ -155,6 +160,8 @@ const NearestVets = () => {
 
     cities.forEach((city) => {
       if (city.name == formData.city) {
+        setResultsLoading(true);
+
         //as soon as the Location state is updated, useEffect will be triggered, thus updating list of Places
         setLocation({
           lat: city.lat,
@@ -190,6 +197,7 @@ const NearestVets = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+
         const response = await axios.get(
           `http://localhost:5000/api/nearest_vets?lat=${location.lat}&lng=${location.lng}&service=${formData.service}&radius=${location.radiusMs}`
         );
@@ -198,16 +206,21 @@ const NearestVets = () => {
 
         if (data.length === 0) {
           notify('No nearby Places found within the specified radius. Try increasing the distance.');
-          setLoading(false);
-          return;
+        }
+        else
+        {
+          console.log(data[0]);
         }
 
-        console.log(data[0]);
 
         setPlaces(data);
 
         setLoading(false);
-      } catch (error) {
+        setResultsLoading(false);
+
+      }
+      catch (error)
+      {
         console.error('Error fetching nearby Places:', error);
         notify('Could not fetch Places!');
         setLoading(false);
@@ -237,10 +250,11 @@ const NearestVets = () => {
         <div>
           <Box sx={{
               backgroundSize: 'cover',
+              backgroundPosition: 'center',
               position: 'relative', backgroundRepeat: 'no-repeat', backgroundImage: 'linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)),url( "src/assets/CatAtVet.jpeg")',
               backgroundAttachment: 'fixed'
             }}>
-            <Grid container pt={10} pb={30} >
+            <Grid container sx={{pt: (isSmallScreen ? 5 : 10), pb: (isSmallScreen ? 5 : 30)}}>
               <Grid item xs={12} sx={{textAlign: 'center'}}>
                 <Typography variant='h1' sx={{fontSize:'3rem', color: 'white'}}>Find Professionals Near You</Typography>
               </Grid>
@@ -255,13 +269,13 @@ const NearestVets = () => {
                     <ButtonGroup>
                     <Button
                       onClick={() => setActive("MANUAL")}
-                      sx={{ backgroundColor: activeButton === 'MANUAL' ? 'primary.light' : 'primary.main', color: 'white', fontSize: isMoreSmallerScreen2 ? 10 : isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
+                      sx={{ backgroundColor: activeButton === 'MANUAL' ? 'primary.light' : 'primary.main', color: 'white', fontSize: isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
                       '&:hover': {backgroundColor: 'primary.dark'} }}>
                         CITY
                       </Button>
 
                       <Button onClick={() => setActive("LIVE")}
-                        sx={{ backgroundColor: activeButton === 'LIVE' ? 'primary.light' : 'primary.main', color: 'white', fontSize: isMoreSmallerScreen2 ? 10 : isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
+                        sx={{ backgroundColor: activeButton === 'LIVE' ? 'primary.light' : 'primary.main', color: 'white', fontSize: isSmallScreen ? 15 : isSmallerScreen ? 4 : 20, width: isMoreSmallerScreen3 ? 100 : isMoreSmallerScreen2 ? 110 : isSmallerScreen ? 120 : isSmallScreen ? 150 : isSmallMediumScreen ? 155 : isMediumScreen ? 170 : isLargeScreen ? 200 : 250, borderRadius: '9px',
                         '&:hover': {backgroundColor: 'primary.dark'} }}>
                         LIVE
                       </Button>
@@ -339,7 +353,7 @@ const NearestVets = () => {
 
                           {!isHugeScreen ? <>&nbsp; &nbsp;</> : null}
 
-                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '200px'), minWidth: (isLargeScreen ? '200px' : '150px'), marginTop: 5}} type='submit'
+                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '100px' : '200px'), minWidth: (isLargeScreen ? '200px' : '100px'), marginTop: 5}} type='submit'
                               startIcon={<LocationCityIcon style={{fontSize: '2rem', color: 'white' }} />} >
                               <Typography variant='h1' sx={{fontSize:'1.5rem', color:'white'}}>Submit</Typography>
                             </Button>
@@ -348,7 +362,7 @@ const NearestVets = () => {
 
                         <Container style={{ display: 'flex', flexDirection: (!isHugeScreen ? 'row' : 'column'), alignItems: 'center', justifyContent: 'space-between', margin: 'auto'}}>
 
-                          <Box sx={{ minWidth: isSmallScreen ? 200 : 250}}>
+                          <Box sx={{ minWidth: isSmallScreen ? 200 : 252, marginTop: 0.2}}>
                             <FormControl sx={{display: 'flex', flexDirection: 'row' }}>
                               <FormControlLabel
                                 value='Slider'
@@ -380,7 +394,7 @@ const NearestVets = () => {
 
                           {!isHugeScreen ? <>&nbsp; &nbsp;</> : null}
 
-                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '150px' : '200px'), minWidth: (isLargeScreen ? '200px' : '150px')}}
+                          <Button variant='contained' color='primary' style={{maxWidth: (isSmallScreen ? '100px' : '200px'), minWidth: (isLargeScreen ? '200px' : '100px')}}
                             startIcon={<NearMeIcon style={{fontSize: '2rem', color: 'white' }} />}
                             onClick={getLiveLocation}
                           >
@@ -401,85 +415,96 @@ const NearestVets = () => {
           <Grid container pt={2} >
             <Grid item xs={(!isLargeScreen ? 2 : 1)}></Grid>
             <Grid item xs={(!isLargeScreen ? 8 : 10)} sx={{textAlign: 'center'}}>
-              <GoogleMap
-                zoom={12}
-                center={location}
-                mapContainerStyle={{ height: '80vh', maxHeight: !isMoreSmallerScreen2 ? '600px' : '300px' }} // Adjust maxHeight to your preference
-              >
 
-                {places.map((place) => (
-                  //don't render marker if the Open Only option is true and the Place is closed
-                  (formData.open == true && (place.opening_hours ? !place.opening_hours.open_now : null)) ? console.log('did not render') :
-                    <Marker
-                      key={place.place_id}
-                      position={place.geometry.location}
-                      onClick={() => handleMarkerClick(place)}
-                    >
-                      {selectedMarker === place && (
-                        <InfoWindow
-                          position={place.geometry.location}
-                          onCloseClick={handleInfoBoxClose}
-                        >
-                          <div style={{maxWidth: '300px'}}>
-
-                            {place.photo && (
-                              <img src={place.photo} alt={`Place ${selectedMarker.index + 1}`} style={{ width: '250px', height: '100px' }} />
-                            )}
-
-                            <h2>{place.name}</h2>
-
-                            <hr />
-
-                            <p>
-                              <Rating name='placeRating' size="small" value={place.rating} readOnly precision={0.1} />
-                              <Box>{place.user_ratings_total} Reviews</Box>
-                            </p>
-
-                            <p>{place.vicinity}</p>
-
-                            {place.opening_hours ? (place.opening_hours.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>) : null}
-
-                            <p>{place.international_phone_number}</p>
-
-                            <a href={place.placeLink}>View on GoogleMaps</a>
-                          </div>
-
-                        </InfoWindow>
-                      )}
-                    </Marker>
-                ))}
-
-                {/* Display user location blue circle marker and translucent error range circle around it */}
-                {location.live && (
-                  <>
-                  <Marker
-                    position={location}
-                    icon={{
-                      path: 'M-8,0a8,8 0 1,0 16,0a8,8 0 1,0 -16,0',
-                      fillColor: 'blue',
-                      fillOpacity: 1,
-                      strokeColor: 'white',
-                      strokeWeight: 2,
-                      scale: 1,
-                    }}
-                  />
-
-                  <Circle
+              {resultsLoading ? (
+                    <Skeleton variant="rounded" fullWidth={true} sx={{height: '80vh', maxHeight: !isMoreSmallerScreen2 ? '600px' : '300px'}} />
+                ) : (
+                  <GoogleMap
+                    zoom={12}
                     center={location}
-                    radius={location.errorRange}
-                    options={{
-                      strokeColor: 'blue',
-                      strokeOpacity: 0.3,
-                      strokeWeight: 2,
-                      fillColor: 'blue',
-                      fillOpacity: 0.1,
-                    }}
-                  />
+                    mapContainerStyle={{ height: '80vh', maxHeight: !isMoreSmallerScreen2 ? '600px' : '300px' }} // Adjust maxHeight to your preference
+                  >
 
-                </>
-                )}
+                    {places.map((place) => (
+                      //don't render marker if the Open Only option is true and the Place is closed
+                      (formData.open == true && (place.opening_hours ? !place.opening_hours.open_now : null)) ? console.log('did not render') :
+                        <Marker
+                          key={place.place_id}
+                          position={place.geometry.location}
+                          onClick={() => handleMarkerClick(place)}
+                        >
+                          {selectedMarker === place && (
+                            <InfoWindow
+                              position={place.geometry.location}
+                              onCloseClick={handleInfoBoxClose}
+                            >
+                              <div style={{maxWidth: '300px'}}>
 
-              </GoogleMap>
+                                {place.photo && (
+                                  <img src={place.photo} alt={`Place ${selectedMarker.index + 1}`} style={{ width: '250px', height: '100px' }} />
+                                )}
+
+                                <h2>{place.name}</h2>
+
+                                <Divider variant='middle' >
+                                  <PetsIcon fontSize='small'/>
+                                </Divider>
+
+                                <p>
+                                  <Rating name='placeRating' size="small" value={place.rating} readOnly precision={0.1} />
+                                  <Box>{place.user_ratings_total} Reviews</Box>
+                                </p>
+
+                                <p>{place.vicinity}</p>
+
+                                {place.opening_hours ? (place.opening_hours.open_now ? <p style={{color: 'green'}}><b>OPEN</b></p> : <p style={{color: 'red'}}><b>CLOSED</b></p>) : null}
+
+                                <p>{place.international_phone_number}</p>
+
+                                <Divider variant='middle' />
+
+                                <a href={place.placeLink}><p>View on GoogleMaps</p></a>
+                              </div>
+
+                            </InfoWindow>
+                          )}
+                        </Marker>
+                    ))}
+
+                    {/* Display user location blue circle marker and translucent error range circle around it */}
+                    {location.live && (
+                      <>
+                        <Marker
+                          position={location}
+                          icon={{
+                            path: 'M-8,0a8,8 0 1,0 16,0a8,8 0 1,0 -16,0',
+                            fillColor: 'blue',
+                            fillOpacity: 1,
+                            strokeColor: 'white',
+                            strokeWeight: 2,
+                            scale: 1,
+                          }}
+                        />
+
+                        <Circle
+                          center={location}
+                          radius={location.errorRange}
+                          options={{
+                            strokeColor: 'blue',
+                            strokeOpacity: 0.3,
+                            strokeWeight: 2,
+                            fillColor: 'blue',
+                            fillOpacity: 0.1,
+                          }}
+                      />
+
+                    </>
+                    )}
+
+                  </GoogleMap>
+                )
+              }
+
             </Grid>
             <Grid item xs={(!isLargeScreen ? 2 : 1)}></Grid>
           </Grid>
