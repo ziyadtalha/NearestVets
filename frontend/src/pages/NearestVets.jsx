@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GoogleMap, useLoadScript, Marker, InfoWindow, Circle } from '@react-google-maps/api';
 import axios from 'axios';
 
@@ -34,6 +34,9 @@ import 'react-toastify/dist/ReactToastify.css';
 
 
 const NearestVets = () => {
+
+  //for scrolling
+  const ref = useRef(null);
 
   const theme = useTheme();
 
@@ -190,8 +193,7 @@ const NearestVets = () => {
   };
 
 
-
-  //List of nearest places:
+  //List of nearby places:
   const [places, setPlaces] = useState([]);
 
   useEffect(() => {
@@ -207,11 +209,6 @@ const NearestVets = () => {
         if (data.length === 0) {
           notify('No nearby Places found within the specified radius. Try increasing the distance.');
         }
-        else
-        {
-          console.log(data[0]);
-        }
-
 
         setPlaces(data);
 
@@ -227,9 +224,11 @@ const NearestVets = () => {
       }
     };
 
-    console.log('rendered');
-
     fetchData();
+
+    //scroll to Map on page
+    ref.current?.scrollIntoView({behavior: 'smooth'});
+
   }, [location]);
 
 
@@ -242,6 +241,7 @@ const NearestVets = () => {
   if (loadError) return <h1>Error loading maps</h1>;
   if (!isLoaded) return <h1>Loading maps</h1>;
 
+
   return (
     <>
       {loading ? (
@@ -253,8 +253,10 @@ const NearestVets = () => {
               backgroundPosition: 'center',
               position: 'relative', backgroundRepeat: 'no-repeat', backgroundImage: 'linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)),url( "src/assets/CatAtVet.jpeg")',
               backgroundAttachment: 'fixed'
-            }}>
-            <Grid container sx={{pt: (isSmallScreen ? 5 : 10), pb: (isSmallScreen ? 5 : 30)}}>
+            }}
+          >
+
+            <Grid container sx={{pt: (isMediumScreen ? 5 : 10), pb: (isMediumScreen ? 5 : 30)}}>
               <Grid item xs={12} sx={{textAlign: 'center'}}>
                 <Typography variant='h1' sx={{fontSize:'3rem', color: 'white'}}>Find Professionals Near You</Typography>
               </Grid>
@@ -410,9 +412,10 @@ const NearestVets = () => {
 
               <Grid itemxs={4}></Grid>
             </Grid>
+
           </Box>
 
-          <Grid container pt={2} >
+          <Grid container pt={2} ref={ref}>
             <Grid item xs={(!isLargeScreen ? 2 : 1)}></Grid>
             <Grid item xs={(!isLargeScreen ? 8 : 10)} sx={{textAlign: 'center'}}>
 
@@ -427,7 +430,7 @@ const NearestVets = () => {
 
                     {places.map((place) => (
                       //don't render marker if the Open Only option is true and the Place is closed
-                      (formData.open == true && (place.opening_hours ? !place.opening_hours.open_now : null)) ? console.log('did not render') :
+                      (formData.open == true && (place.opening_hours ? !place.opening_hours.open_now : null)) ? null :
                         <Marker
                           key={place.place_id}
                           position={place.geometry.location}
